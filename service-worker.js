@@ -19,17 +19,20 @@ self.addEventListener('message', event => {
 // NOVO: faz abrir/focar o site ao clicar na notificação
 self.addEventListener('notificationclick', event => {
   event.notification.close();
+
+  const repoURL = 'https://bevidferreira.github.io/meu-app/'; // <<< Troca pelo teu link GitHub Pages
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-      // Se já houver uma aba aberta, foca nela
+      // Se já houver aba aberta do app, foca nela
       for (const client of clientList) {
-        if (client.url.includes('/index.html') && 'focus' in client) {
+        if (client.url.startsWith(repoURL) && 'focus' in client) {
           return client.focus();
         }
       }
-      // Senão abre uma nova aba com o site
+      // Senão abre uma nova aba
       if (clients.openWindow) {
-        return clients.openWindow('https://bevidferreira.github.io/meu-app/');
+        return clients.openWindow(repoURL);
       }
     })
   );
