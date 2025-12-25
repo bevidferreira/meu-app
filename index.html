@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>App Web Completo</title>
+
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        primary: "#137fec",
+        "background-light": "#f6f7f8",
+        "background-dark": "#101922",
+      },
+      fontFamily: {
+        display: ["Inter", "sans-serif"],
+      },
+      borderRadius: {
+        DEFAULT: "0.25rem",
+        lg: "0.5rem",
+        xl: "0.75rem",
+        full: "9999px",
+      },
+    },
+  },
+};
+</script>
+
+<style>
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+body, html { height: 100%; margin: 0; }
+.hidden { display: none; }
+:root { --color-primary: #137fec; }
+
+#top-bar { position: fixed; top: 0; left: 0; width: 100%; z-index: 10; }
+nav { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 10; }
+
+#app main { padding-top: 4rem; padding-bottom: 4rem; overflow-y: auto; flex: 1 1 auto; max-height: calc(100vh - 4rem - 4rem); }
+
+nav button.active { color: var(--color-primary); }
+nav button.active span.material-symbols-outlined { color: var(--color-primary); }
+
+.category-btn:hover { transform: scale(1.05); transition: transform 0.2s; }
+
+button.add-task-active { background-color: var(--color-primary); color: white; }
+</style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-800 dark:text-slate-200">
+
+<div id="app" class="flex flex-col h-screen w-full max-w-lg mx-auto overflow-hidden">
+
+  <!-- Barra Superior -->
+  <div id="top-bar" class="flex items-center justify-center p-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm h-14">
+    <h2 id="page-title" class="text-lg font-bold text-slate-900 dark:text-white">Dashboard</h2>
+  </div>
+
+  <!-- Dashboard -->
+  <main id="page-dashboard" class="flex flex-col gap-4 p-4 overflow-y-auto mt-14 mb-16">
+    <div id="dashboard-layout" class="grid grid-cols-3 gap-3 mt-2">
+      <button class="category-btn flex flex-col items-center justify-center gap-2 p-3 h-24 rounded-xl bg-white dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-medium transition-all active:scale-95" data-category="Trabalho">
+        <span class="material-symbols-outlined text-red-500">work</span><span>Trabalho</span>
+      </button>
+      <button class="category-btn flex flex-col items-center justify-center gap-2 p-3 h-24 rounded-xl bg-white dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-medium transition-all active:scale-95" data-category="Pessoal">
+        <span class="material-symbols-outlined">person</span><span>Pessoal</span>
+      </button>
+      <button class="category-btn flex flex-col items-center justify-center gap-2 p-3 h-24 rounded-xl bg-white dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-medium transition-all active:scale-95" data-category="Saúde">
+        <span class="material-symbols-outlined text-green-500">fitness_center</span><span>Saúde</span>
+      </button>
+    </div>
+  </main>
+
+  <!-- Minhas Tarefas -->
+  <main id="page-tasks" class="hidden flex flex-col gap-4 p-4 overflow-y-auto mt-14 mb-16">
+    <label class="flex flex-col w-full">
+      <p class="text-slate-700 dark:text-slate-300 text-base font-medium pb-2">Título</p>
+      <input id="task-title" class="form-input w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-3 text-base text-slate-900 dark:text-white" placeholder="Ex: Reunião com a equipe"/>
+    </label>
+    <label class="flex flex-col w-full">
+      <p class="text-slate-700 dark:text-slate-300 text-base font-medium pb-2">Descrição</p>
+      <textarea id="task-desc" class="form-input w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-3 text-base text-slate-900 dark:text-white" placeholder="Adicione mais detalhes..."></textarea>
+    </label>
+    <div class="flex gap-2">
+      <div class="flex flex-col w-1/2">
+        <label class="text-slate-700 dark:text-slate-300 text-base font-medium pb-1">Data</label>
+        <input type="date" id="task-date" class="form-input w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-2 text-base text-slate-900 dark:text-white"/>
+      </div>
+      <div class="flex flex-col w-1/2">
+        <label class="text-slate-700 dark:text-slate-300 text-base font-medium pb-1">Hora</label>
+        <input type="time" id="task-time" class="form-input w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-2 text-base text-slate-900 dark:text-white"/>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-2">
+      <label class="flex items-center gap-2">
+        <span>Categoria:</span>
+        <select id="task-category" class="rounded-lg p-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/50">
+          <option value="Trabalho">Trabalho</option>
+          <option value="Pessoal">Pessoal</option>
+          <option value="Saúde">Saúde</option>
+        </select>
+      </label>
+    </div>
+
+    <button id="add-task-btn" onclick="saveTask()" class="w-full py-3 rounded-xl font-bold text-lg mt-2">Adicionar Tarefa</button>
+    <div id="task-list" class="mt-4 flex flex-col gap-2"></div>
+  </main>
+
+  <!-- Configurações -->
+  <main id="page-settings" class="hidden flex flex-col gap-4 p-4 overflow-y-auto mt-14 mb-16">
+    <h3 class="text-sm font-bold uppercase text-slate-500 dark:text-slate-400 pb-2 pt-4 tracking-wider">Personalização</h3>
+    <div class="bg-white dark:bg-slate-900/50 rounded-xl p-4 flex flex-col gap-4 shadow-sm shadow-slate-200/50 dark:shadow-black/20">
+      <div class="flex items-center justify-between">
+        <p>Tema Escuro</p>
+        <input type="checkbox" id="toggle-theme"/>
+      </div>
+      <div class="flex items-center gap-4 pt-2">
+        <span class="material-symbols-outlined text-indigo-500">palette</span>
+        <p class="text-base font-normal">Cor de Destaque</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="size-8 rounded-full bg-[#137fec] ring-2 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 ring-[#137fec] cursor-pointer" data-color="#137fec"></div>
+        <div class="size-8 rounded-full bg-pink-500 cursor-pointer" data-color="pink"></div>
+        <div class="size-8 rounded-full bg-orange-500 cursor-pointer" data-color="orange"></div>
+        <div class="size-8 rounded-full bg-teal-500 cursor-pointer" data-color="teal"></div>
+        <div class="size-8 rounded-full bg-purple-500 cursor-pointer" data-color="purple"></div>
+      </div>
+      <div class="flex items-center gap-4 pt-2">
+        <span class="material-symbols-outlined text-rose-500">format_size</span>
+        <p class="text-base font-normal">Fonte</p>
+        <select id="select-font" class="ml-auto bg-slate-100 dark:bg-slate-800 rounded-lg p-2 border border-slate-300 dark:border-slate-700">
+          <option value="Inter" selected>Inter</option>
+          <option value="Merriweather">Merriweather</option>
+          <option value="Roboto Mono">Roboto Mono</option>
+        </select>
+      </div>
+      <div class="flex items-center gap-4 pt-2">
+        <span class="material-symbols-outlined text-cyan-500">widgets</span>
+        <p class="text-base font-normal">Layout do Dashboard</p>
+        <select id="select-dashboard-layout" class="ml-auto bg-slate-100 dark:bg-slate-800 rounded-lg p-2 border border-slate-300 dark:border-slate-700">
+          <option value="grid" selected>Grid</option>
+          <option value="list">Lista</option>
+        </select>
+      </div>
+      <div class="flex items-center justify-between pt-2">
+        <p>Notificações</p>
+        <input type="checkbox" id="toggle-notifications" checked class="w-6 h-6"/>
+      </div>
+    </div>
+  </main>
+
+  <!-- Barra Inferior -->
+  <nav class="bg-background-light dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 flex justify-around items-center h-16">
+    <button onclick="showPage('page-dashboard')" class="flex flex-col items-center text-slate-700 dark:text-slate-300"><span class="material-symbols-outlined">home</span>Dashboard</button>
+    <button onclick="showPage('page-tasks')" class="flex flex-col items-center text-slate-700 dark:text-slate-300"><span class="material-symbols-outlined">check_circle</span>Minhas Tarefas</button>
+    <button onclick="showPage('page-settings')" class="flex flex-col items-center text-slate-700 dark:text-slate-300"><span class="material-symbols-outlined">settings</span>Configurações</button>
+  </nav>
+</div>
+
+<script>
+let tasks = [];
+let filterCategory = null;
+
+// --- Notificações ---
+if ("Notification" in window && Notification.permission !== "granted") {
+  Notification.requestPermission();
+}
+
+// --- SPA ---
+function showPage(pageId) {
+  document.querySelectorAll('#app main').forEach(p => p.classList.add('hidden'));
+  document.getElementById(pageId).classList.remove('hidden');
+  const titles = { 'page-dashboard': 'Dashboard', 'page-tasks': 'Minhas Tarefas', 'page-settings': 'Configurações' };
+  document.getElementById('page-title').textContent = titles[pageId] || '';
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`nav button[onclick="showPage('${pageId}')"]`);
+  if (btn) btn.classList.add('active');
+  const addBtn = document.getElementById('add-task-btn');
+  if (pageId === 'page-tasks') { addBtn.classList.add('add-task-active'); } else { addBtn.classList.remove('add-task-active'); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const darkMode = JSON.parse(localStorage.getItem('darkMode'));
+  document.getElementById('toggle-theme').checked = darkMode;
+  document.documentElement.classList.toggle('dark', darkMode);
+
+  const savedColor = localStorage.getItem('primaryColor');
+  if (savedColor) document.documentElement.style.setProperty('--color-primary', savedColor);
+
+  const savedFont = localStorage.getItem('font');
+  if (savedFont) document.body.style.fontFamily = savedFont;
+
+  const savedLayout = localStorage.getItem('dashboardLayout');
+  if (savedLayout) {
+    const dash = document.getElementById('dashboard-layout');
+    dash.className = savedLayout === 'list' ? 'flex flex-col gap-2 mt-2' : 'grid grid-cols-3 gap-3 mt-2';
+    document.getElementById('select-dashboard-layout').value = savedLayout;
+  }
+
+  const notifEnabled = JSON.parse(localStorage.getItem('notificationsEnabled'));
+  document.getElementById('toggle-notifications').checked = notifEnabled !== false;
+
+  tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+  renderTasks();
+  tasks.forEach(t => scheduleTaskNotification(t));
+
+  showPage('page-dashboard');
+});
+
+// --- Configurações ---
+document.getElementById('toggle-theme').addEventListener('change', e => {
+  const isDark = e.target.checked;
+  document.documentElement.classList.toggle('dark', isDark);
+  localStorage.setItem('darkMode', isDark);
+});
+
+document.querySelectorAll('[data-color]').forEach(btn => {
+  btn.addEventListener('click', e => {
+    const color = e.currentTarget.dataset.color;
+    document.documentElement.style.setProperty('--color-primary', color);
+    localStorage.setItem('primaryColor', color);
+  });
+});
+
+document.getElementById('select-font').addEventListener('change', e => {
+  const font = e.target.value;
+  document.body.style.fontFamily = font;
+  localStorage.setItem('font', font);
+});
+
+document.getElementById('select-dashboard-layout').addEventListener('change', e => {
+  const layout = e.target.value;
+  const dash = document.getElementById('dashboard-layout');
+  dash.className = layout === 'list' ? 'flex flex-col gap-2 mt-2' : 'grid grid-cols-3 gap-3 mt-2';
+  localStorage.setItem('dashboardLayout', layout);
+});
+
+document.getElementById('toggle-notifications').addEventListener('change', e => {
+  const enabled = e.target.checked;
+  localStorage.setItem('notificationsEnabled', enabled);
+});
+
+// --- Tarefas ---
+function saveTask() {
+  const title = document.getElementById('task-title').value.trim();
+  const desc = document.getElementById('task-desc').value.trim();
+  const date = document.getElementById('task-date').value;
+  const time = document.getElementById('task-time').value;
+  const category = document.getElementById('task-category').value;
+  if (!title || !date || !time) return alert("Preencha título, data e hora da tarefa");
+
+  const now = new Date();
+  const createdAt = now.toLocaleDateString() + " " + now.toLocaleTimeString();
+  const task = {
+  id: Date.now(),
+  title,
+  desc,
+  date,
+  time,
+  category,
+  completed: false,
+  createdAt
+};
+  tasks.push(task);
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+  renderTasks();
+  scheduleTaskNotification(task);
+
+  document.getElementById('task-title').value = '';
+  document.getElementById('task-desc').value = '';
+  document.getElementById('task-date').value = '';
+  document.getElementById('task-time').value = '';
+}
+
+function renderTasks() {
+  const list = document.getElementById('task-list');
+  list.innerHTML = '';
+  tasks.forEach((t, idx) => {
+    if (filterCategory && t.category !== filterCategory) return;
+    const div = document.createElement('div');
+    div.className = "p-3 bg-white dark:bg-slate-800/50 rounded-xl border border-slate-300 dark:border-slate-700 flex flex-col gap-1";
+    div.innerHTML = `<div class="flex justify-between items-start">
+  <strong class="${t.completed ? 'line-through text-slate-400' : ''}">
+    ${t.title}
+  </strong>
+  <div class="flex gap-2">
+    <button onclick="toggleTask(${t.id})" class="text-green-500 text-sm">
+      ${t.completed ? 'Reabrir' : 'Concluir'}
+    </button>
+    <button onclick="deleteTask(${t.id})" class="text-red-500 text-sm">
+      Excluir
+    </button>
+  </div>
+</div>
+<span class="text-xs text-slate-400">[Criada: ${t.createdAt}]</span>
+<p>Data: ${t.date} ${t.time}</p>
+<p>Categoria: ${t.category}</p>
+<p>${t.desc}</p>`;
+    list.appendChild(div);
+  });
+}
+
+function deleteTask(id) {
+  if (!confirm("Deseja realmente excluir esta tarefa?")) return;
+  tasks = tasks.filter(t => t.id !== id);
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+  renderTasks();
+}
+
+function toggleTask(id) {
+  tasks = tasks.map(t =>
+    t.id === id ? { ...t, completed: !t.completed } : t
+  );
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+  renderTasks();
+}
+document.querySelectorAll('.category-btn').forEach(btn => {
+  btn.addEventListener('click', e => {
+    filterCategory = e.currentTarget.dataset.category;
+    document.getElementById('task-category').value = filterCategory;
+    showPage('page-tasks');
+    renderTasks();
+  });
+});
+
+// --- Notificações ---
+function scheduleTaskNotification(task) {
+  const enabled = JSON.parse(localStorage.getItem('notificationsEnabled'));
+  if (!enabled || Notification.permission !== "granted") return;
+
+  const time = new Date(`${task.date}T${task.time}`).getTime();
+  const delay = time - Date.now();
+  if (delay <= 0) return;
+
+  navigator.serviceWorker.ready.then(reg => {
+    reg.active.postMessage({
+      type: 'SCHEDULE_NOTIFICATION',
+      title: "Tarefa: " + task.title,
+      body: task.desc || "Hora da tarefa!",
+      delay
+    });
+  });
+}
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+</body>
+  </html>
