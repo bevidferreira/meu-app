@@ -29,7 +29,7 @@ self.addEventListener('notificationclick', event => {
       }
       // Senão abre uma nova aba com o site
       if (clients.openWindow) {
-        return clients.openWindow('/index.html');
+        return clients.openWindow('https://bevidferreira.github.io/meu-app/');
       }
     })
   );
