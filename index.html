@@ -322,21 +322,16 @@ function renderTasks() {
   });  
 }  
   
-  function deleteTask(id) {
+ function deleteTask(id) {
   const idx = tasks.findIndex(t => t.id === id);
   if (idx === -1) return;
-
-  if (!tasks[idx].seen) {
-    showToast("Só pode excluir após a notificação");
-    return;
-  }
 
   if (!confirm("Excluir esta tarefa?")) return;
 
   tasks.splice(idx, 1);
   localStorage.setItem('tasks', JSON.stringify(tasks));
   renderTasks();
-}
+} 
   
   function toggleTask(id) {
   const idx = tasks.findIndex(t => t.id === id);
