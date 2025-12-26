@@ -339,10 +339,6 @@ function renderTasks() {
 
   const now = new Date();
   const taskDate = new Date(`${tasks[idx].date}T${tasks[idx].time}`);
-  if (now < taskDate) {
-    showToast("A tarefa só pode ser concluída no horário marcado");
-    return;
-  }
 
   tasks[idx].completed = !tasks[idx].completed;
   localStorage.setItem('tasks', JSON.stringify(tasks));
