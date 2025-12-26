@@ -310,18 +310,42 @@ function renderTasks() {
   });  
 }  
   
-function deleteTask(id) {  
-  if (!confirm("Deseja realmente excluir esta tarefa?")) return;  
-  tasks = tasks.filter(t => t.id !== id);  
-  localStorage.setItem('tasks', JSON.stringify(tasks));  
-  renderTasks();  
-}  
+function deleteTask(id) {
+  const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+
+  // só permite excluir se a tarefa foi vista
+  if (!task.seen) {
+    showToast("A tarefa só pode ser excluída após a notificação e visualização");
+    return;
+  }
+
+  const confirmed = confirm("Deseja realmente excluir esta tarefa?");
+  if (!confirmed) return;
+
+  const newTasks = tasks.filter(t => t.id !== id);
+  localStorage.setItem('tasks', JSON.stringify(newTasks));
+  renderTasks();
+}
   
-function toggleTask(id) {  
-  tasks = tasks.filter(t => t.id !== id);  
-  localStorage.setItem('tasks', JSON.stringify(tasks));  
-  renderTasks();  
-}  
+function toggleTask(id) {
+  const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+
+  // só permite concluir se horário da tarefa chegou
+  const now = new Date();
+  const taskDate = new Date(`${task.date}T${task.time}`);
+  if (now < taskDate) {
+    showToast("A tarefa só pode ser concluída no horário marcado");
+    return;
+  }
+
+  task.completed = !task.completed;
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+  renderTasks();
+}
 document.querySelectorAll('.category-btn').forEach(btn => {  
   btn.addEventListener('click', e => {  
     filterCategory = e.currentTarget.dataset.category;  
@@ -332,26 +356,43 @@ document.querySelectorAll('.category-btn').forEach(btn => {
 });  
   
 // --- Notificações ---  
-function scheduleTaskNotification(task) {  
-  const enabled = JSON.parse(localStorage.getItem('notificationsEnabled'));  
-  if (!enabled || Notification.permission !== "granted") return;  
-  
-  const time = new Date(`${task.date}T${task.time}`).getTime();  
-  const delay = time - Date.now();  
-  if (delay <= 0) return;  
-  
-  navigator.serviceWorker.ready.then(reg => {  
-    reg.active.postMessage({  
-      type: 'SCHEDULE_NOTIFICATION',  
-      title: "Tarefa: " + task.title,  
-      body: task.desc || "Hora da tarefa!",  
-      delay  
-    });  
-  });  
-}  
-if ('serviceWorker' in navigator) {  
-  navigator.serviceWorker.register('service-worker.js');  
-}  
+function scheduleTaskNotification(task) {
+  const enabled = JSON.parse(localStorage.getItem('notificationsEnabled'));
+  if (!enabled || Notification.permission !== "granted") return;
+
+  const taskTime = new Date(`${task.date}T${task.time}`).getTime();
+  const delay = taskTime - Date.now();
+  if (delay <= 0) return; // horário já passou
+
+  navigator.serviceWorker.ready.then(reg => {
+    reg.active.postMessage({
+      type: 'SCHEDULE_NOTIFICATION',
+      title: `Tarefa: ${task.title}`,
+      body: task.desc || 'Hora da tarefa!',
+      delay,
+      taskId: task.id
+    });
+  });
+}
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js')
+    .then(() => console.log('Service Worker registrado'))
+    .catch(err => console.error('Erro SW:', err));
+}
+
+// Receber mensagens do SW (ex: tarefa vista)
+navigator.serviceWorker.addEventListener('message', event => {
+  if (event.data.type === 'TASK_SEEN') {
+    const taskId = event.data.taskId;
+    const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      task.seen = true;  // marca como vista
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      renderTasks();      // atualiza UI
+    }
+  }
+});
 
 </script>  </body>  
   </html> 
