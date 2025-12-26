@@ -5,7 +5,9 @@ const CACHE_NAME = 'app-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  // Adicione outros recursos que precisa cache
+  'https://cdn.tailwindcss.com',
+  'https://fonts.googleapis.com',
+  'https://fonts.gstatic.com'
 ];
 
 self.addEventListener('install', event => {
