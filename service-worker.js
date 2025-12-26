@@ -1,19 +1,6 @@
-// service-worker.js
-
-// Cache para app (opcional, se quiseres offline completo)
-const CACHE_NAME = 'app-cache-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com',
-  'https://fonts.gstatic.com'
-];
+const CACHE_NAME = 'app-cache-v2';
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
-  );
   self.skipWaiting();
 });
 
@@ -21,59 +8,42 @@ self.addEventListener('activate', event => {
   event.waitUntil(self.clients.claim());
 });
 
+// Recebe tarefas para agendar
+self.addEventListener('message', event => {
+  const data = event.data;
+  if (!data || data.type !== 'SCHEDULE_NOTIFICATION') return;
+
+  const { id, title, body, time } = data.task;
+  const delay = time - Date.now();
+  if (delay <= 0) return;
+
+  setTimeout(() => {
+    self.registration.showNotification(title, {
+      body,
+      tag: `task-${id}`,
+      renotify: true,
+      requireInteraction: true
+    });
+  }, delay);
+});
+
+// Clique na notificação
 self.addEventListener('notificationclick', event => {
   event.notification.close();
 
+  const taskId = parseInt(event.notification.tag.replace('task-', ''));
+
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-      for (const client of clientList) {
-        if (client.url.includes('/')) {
-          return client.focus();
-        }
-      }
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      if (list.length > 0) return list[0].focus();
       return clients.openWindow('/');
     })
   );
 
+  // informa a página que foi vista
   clients.matchAll({ includeUncontrolled: true }).then(clients => {
-    clients.forEach(c => c.postMessage({
-      type: 'TASK_SEEN',
-      taskId: parseInt(event.notification.tag.replace('task-', ''))
-    }));
+    clients.forEach(c =>
+      c.postMessage({ type: 'TASK_SEEN', taskId })
+    );
   });
-});
-
-// --- Interação do usuário na notificação ---
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-
-  // Focar ou abrir a aba do app
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-      for (const client of clientList) {
-        if (client.url.includes('/')) {
-          return client.focus();
-        }
-      }
-      return clients.openWindow('/');
-    })
-  );
-
-  // Aqui poderias mandar mensagem para a aba marcar tarefa como "visto"
-  // Exemplo: event.notification.tag contém o taskId
-  clients.matchAll({ includeUncontrolled: true }).then(clients => {
-    clients.forEach(c => c.postMessage({
-      type: 'TASK_SEEN',
-      taskId: parseInt(event.notification.tag.replace('task-', ''))
-    }));
-  });
-});
-
-// --- Limpeza cache antigo (opcional) ---
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
-  );
 });
