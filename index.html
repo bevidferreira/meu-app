@@ -363,37 +363,36 @@ document.querySelectorAll('.category-btn').forEach(btn => {
   });  
 });  
   
+  function markTaskSeen(taskId) {
+  const idx = tasks.findIndex(t => t.id === taskId);
+  if (idx === -1) return;
+
+  tasks[idx].seen = true;
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+  renderTasks();
+  }
 // --- Notificações ---  
 
   function scheduleTaskNotification(task) {
   const enabled = JSON.parse(localStorage.getItem('notificationsEnabled'));
-  if (!enabled || Notification.permission !== "granted") return;
+  if (!enabled) return;
+  if (Notification.permission !== "granted") return;
 
   const time = new Date(`${task.date}T${task.time}`).getTime();
   if (time <= Date.now()) return;
 
-  navigator.serviceWorker.ready.then(reg => {
-    reg.active.postMessage({
-      type: 'SCHEDULE_NOTIFICATION',
-      task: {
-        id: task.id,
-        title: `Tarefa: ${task.title}`,
-        body: task.desc || 'Hora da tarefa!',
-        time
-      }
+  const delay = time - Date.now();
+
+  // fallback simples (FUNCIONA)
+  setTimeout(() => {
+    new Notification(`Tarefa: ${task.title}`, {
+      body: task.desc || 'Hora da tarefa!',
+      tag: `task-${task.id}`
     });
-  });
-  }
-      else {
-      // fallback: timeout enquanto app estiver aberto
-      const delay = time - Date.now();
-      setTimeout(() => {
-        new Notification(`Tarefa: ${task.title}`, {
-          body: task.desc || 'Hora da tarefa!'
-        });
-      }, delay);
-    }
-  });
+
+    // marca como vista automaticamente
+    markTaskSeen(task.id);
+  }, delay);
 }
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/service-worker.js')
