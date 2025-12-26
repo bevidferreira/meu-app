@@ -1,49 +1,36 @@
-const CACHE_NAME = 'app-cache-v2';
-
-self.addEventListener('install', event => {
+self.addEventListener('install', e => {
   self.skipWaiting();
 });
 
-self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim());
+self.addEventListener('activate', e => {
+  self.clients.claim();
 });
 
-// Recebe tarefas para agendar
-self.addEventListener('message', event => {
-  const data = event.data;
-  if (!data || data.type !== 'SCHEDULE_NOTIFICATION') return;
+self.addEventListener('message', e => {
+  if (e.data.type === 'SHOW_NOTIFICATION') {
+    const task = e.data.task;
 
-  const { id, title, body, time } = data.task;
-  const delay = time - Date.now();
-  if (delay <= 0) return;
-
-  setTimeout(() => {
-    self.registration.showNotification(title, {
-      body,
-      tag: `task-${id}`,
-      renotify: true,
-      requireInteraction: true
+    self.registration.showNotification(`Tarefa: ${task.title}`, {
+      body: task.desc || 'Hora da tarefa!',
+      tag: 'task-' + task.id,
+      data: { taskId: task.id }
     });
-  }, delay);
+  }
 });
 
-// Clique na notificação
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
 
-  const taskId = parseInt(event.notification.tag.replace('task-', ''));
-
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      if (list.length > 0) return list[0].focus();
-      return clients.openWindow('/');
-    })
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then(clients => {
+        if (clients.length > 0) {
+          clients[0].postMessage({
+            type: 'TASK_SEEN',
+            taskId: e.notification.data.taskId
+          });
+          clients[0].focus();
+        }
+      })
   );
-
-  // informa a página que foi vista
-  clients.matchAll({ includeUncontrolled: true }).then(clients => {
-    clients.forEach(c =>
-      c.postMessage({ type: 'TASK_SEEN', taskId })
-    );
-  });
 });
