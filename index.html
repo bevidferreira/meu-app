@@ -347,16 +347,7 @@ function renderTasks() {
   tasks[idx].completed = !tasks[idx].completed;
   localStorage.setItem('tasks', JSON.stringify(tasks));
   renderTasks();
-
-  // --- Notificação quando concluída ---
-  const enabled = JSON.parse(localStorage.getItem('notificationsEnabled'));
-  if (enabled && Notification.permission === "granted" && tasks[idx].completed) {
-    new Notification(`Tarefa Concluída: ${tasks[idx].title}`, {
-      body: tasks[idx].desc || 'Tarefa concluída com sucesso!',
-      tag: `task-${tasks[idx].id}-completed`
-    });
-  }
-}  
+ }
   
   function markTaskSeen(taskId) {
   const idx = tasks.findIndex(t => t.id === taskId);
@@ -367,18 +358,16 @@ function renderTasks() {
   renderTasks();
   }
 // --- Notificações ---  
-
-  function scheduleTaskNotification(task) {
+function scheduleTaskNotification(task) {
   const enabled = JSON.parse(localStorage.getItem('notificationsEnabled'));
   if (!enabled) return;
   if (Notification.permission !== "granted") return;
 
-  const time = new Date(`${task.date}T${task.time}`).getTime();
-  if (time <= Date.now()) return;
+  const taskTime = new Date(`${task.date}T${task.time}`).getTime();
+  if (taskTime <= Date.now()) return; // ignora tarefas passadas
 
-  const delay = time - Date.now();
+  const delay = taskTime - Date.now();
 
-  // fallback simples (FUNCIONA)
   setTimeout(() => {
     new Notification(`Tarefa: ${task.title}`, {
       body: task.desc || 'Hora da tarefa!',
@@ -389,24 +378,41 @@ function renderTasks() {
     markTaskSeen(task.id);
   }, delay);
 }
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js')
-    .then(() => console.log('Service Worker registrado'))
-    .catch(err => console.error('Erro SW:', err));
-}
 
-// Receber mensagens do SW (ex: tarefa vista)
-navigator.serviceWorker.addEventListener('message', event => {
-  if (event.data.type === 'TASK_SEEN') {
-    const taskId = event.data.taskId;
-    const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-      task.seen = true;  // marca como vista
-      localStorage.setItem('tasks', JSON.stringify(tasks));
-      renderTasks();      // atualiza UI
-    }
+// --- Ao carregar a página, agenda todas as tarefas futuras ---
+document.addEventListener('DOMContentLoaded', () => {
+  const darkMode = JSON.parse(localStorage.getItem('darkMode'));
+  document.getElementById('toggle-theme').checked = darkMode;
+  document.documentElement.classList.toggle('dark', darkMode);
+
+  const savedColor = localStorage.getItem('primaryColor');
+  if (savedColor) document.documentElement.style.setProperty('--color-primary', savedColor);
+
+  const savedFont = localStorage.getItem('font');
+  if (savedFont) document.body.style.fontFamily = savedFont;
+
+  const savedLayout = localStorage.getItem('dashboardLayout');
+  if (savedLayout) {
+    const dash = document.getElementById('dashboard-layout');
+    dash.className = savedLayout === 'list' ? 'flex flex-col gap-2 mt-2' : 'grid grid-cols-3 gap-3 mt-2';
+    document.getElementById('select-dashboard-layout').value = savedLayout;
   }
+
+  const notifEnabled = JSON.parse(localStorage.getItem('notificationsEnabled'));
+  document.getElementById('toggle-notifications').checked = notifEnabled !== false;
+
+  tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+  renderTasks();
+
+  // Agenda notificações para todas as tarefas futuras
+  tasks.forEach(task => {
+    const taskTime = new Date(`${task.date}T${task.time}`).getTime();
+    if (taskTime > Date.now()) {
+      scheduleTaskNotification(task);
+    }
+  });
+
+  showPage('page-dashboard');
 });
 
   // --- Atualização automática de tarefas vencidas ---
