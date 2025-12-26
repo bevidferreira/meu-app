@@ -333,7 +333,7 @@ function renderTasks() {
   renderTasks();
 } 
   
-  function toggleTask(id) {
+ function toggleTask(id) {
   const idx = tasks.findIndex(t => t.id === id);
   if (idx === -1) return;
 
@@ -347,16 +347,16 @@ function renderTasks() {
   tasks[idx].completed = !tasks[idx].completed;
   localStorage.setItem('tasks', JSON.stringify(tasks));
   renderTasks();
-}
 
-document.querySelectorAll('.category-btn').forEach(btn => {  
-  btn.addEventListener('click', e => {  
-    filterCategory = e.currentTarget.dataset.category;  
-    document.getElementById('task-category').value = filterCategory;  
-    showPage('page-tasks');  
-    renderTasks();  
-  });  
-});  
+  // --- Notificação quando concluída ---
+  const enabled = JSON.parse(localStorage.getItem('notificationsEnabled'));
+  if (enabled && Notification.permission === "granted" && tasks[idx].completed) {
+    new Notification(`Tarefa Concluída: ${tasks[idx].title}`, {
+      body: tasks[idx].desc || 'Tarefa concluída com sucesso!',
+      tag: `task-${tasks[idx].id}-completed`
+    });
+  }
+}  
   
   function markTaskSeen(taskId) {
   const idx = tasks.findIndex(t => t.id === taskId);
