@@ -190,7 +190,13 @@ document.addEventListener('DOMContentLoaded', () => {
   
   tasks = JSON.parse(localStorage.getItem('tasks')) || [];  
   renderTasks();  
-  tasks.forEach(t => scheduleTaskNotification(t));  
+  tasks.forEach(t => {
+  if (!t.notified) {
+    scheduleTaskNotification(t);
+    t.notified = true;
+  }
+});
+localStorage.setItem('tasks', JSON.stringify(tasks));
   
   showPage('page-dashboard');  
 });  
@@ -287,8 +293,14 @@ function renderTasks() {
   })  
   .forEach((t) => {  
     if (filterCategory && t.category !== filterCategory) return;  
+    const expired = new Date(`${t.date}T${t.time}`) < new Date();
     const div = document.createElement('div');  
-    div.className = "p-3 bg-white dark:bg-slate-800/50 rounded-xl border border-slate-300 dark:border-slate-700 flex flex-col gap-1";  
+    div.className = `
+  p-3 rounded-xl border flex flex-col gap-1
+  ${expired
+    ? 'opacity-60 bg-slate-200 dark:bg-slate-700'
+    : 'bg-white dark:bg-slate-800/50 border-slate-300 dark:border-slate-700'}
+`;
     div.innerHTML = `<div class="flex justify-between items-start">  
   <strong class="${t.completed ? 'line-through text-slate-400' : ''}">  
     ${t.title}  
@@ -321,6 +333,11 @@ function deleteTask(id) {
 
   if (!confirm("Deseja realmente excluir esta tarefa?")) return;
 
+  navigator.serviceWorker.ready.then(reg => {
+  reg.getNotifications({ tag: `task-${id}` }).then(notifs => {
+    notifs.forEach(n => n.close());
+  });
+});
   tasks.splice(idx, 1);
   localStorage.setItem('tasks', JSON.stringify(tasks));
   renderTasks();
@@ -359,15 +376,26 @@ function scheduleTaskNotification(task) {
   if (time <= Date.now()) return;
 
   navigator.serviceWorker.ready.then(reg => {
-    reg.postMessage({
-      type: 'SCHEDULE_NOTIFICATION',
-      task: {
-        id: task.id,
-        title: task.title,
-        body: task.desc || 'Hora da tarefa!',
-        time
-      }
-    });
+    // tenta trigger nativo
+    if ('showTrigger' in Notification.prototype) {
+      reg.postMessage({
+        type: 'SCHEDULE_NOTIFICATION',
+        task: {
+          id: task.id,
+          title: `Tarefa: ${task.title}`,
+          body: task.desc || 'Hora da tarefa!',
+          time
+        }
+      });
+    } else {
+      // fallback: timeout enquanto app estiver aberto
+      const delay = time - Date.now();
+      setTimeout(() => {
+        new Notification(`Tarefa: ${task.title}`, {
+          body: task.desc || 'Hora da tarefa!'
+        });
+      }, delay);
+    }
   });
 }
 if ('serviceWorker' in navigator) {
@@ -389,6 +417,26 @@ navigator.serviceWorker.addEventListener('message', event => {
     }
   }
 });
+
+  // --- Atualização automática de tarefas vencidas ---
+setInterval(() => {
+  const now = Date.now();
+  let changed = false;
+
+  tasks.forEach(task => {
+    const taskTime = new Date(`${task.date}T${task.time}`).getTime();
+
+    if (taskTime < now && !task.expired) {
+      task.expired = true;   // marca como vencida
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+    renderTasks();
+  }
+}, 60000); // executa a cada 1 minuto
 
 </script>  </body>  
   </html> 
