@@ -311,41 +311,36 @@ function renderTasks() {
 }  
   
 function deleteTask(id) {
-  const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-  const task = tasks.find(t => t.id === id);
-  if (!task) return;
+  const idx = tasks.findIndex(t => t.id === id);
+  if (idx === -1) return;
 
-  // só permite excluir se a tarefa foi vista
-  if (!task.seen) {
-    showToast("A tarefa só pode ser excluída após a notificação e visualização");
+  if (!tasks[idx].seen) {
+    showToast("A tarefa só pode ser excluída após a notificação");
     return;
   }
 
-  const confirmed = confirm("Deseja realmente excluir esta tarefa?");
-  if (!confirmed) return;
+  if (!confirm("Deseja realmente excluir esta tarefa?")) return;
 
-  const newTasks = tasks.filter(t => t.id !== id);
-  localStorage.setItem('tasks', JSON.stringify(newTasks));
+  tasks.splice(idx, 1);
+  localStorage.setItem('tasks', JSON.stringify(tasks));
   renderTasks();
 }
-  
-function toggleTask(id) {
-  const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-  const task = tasks.find(t => t.id === id);
-  if (!task) return;
+  function toggleTask(id) {
+  const idx = tasks.findIndex(t => t.id === id);
+  if (idx === -1) return;
 
-  // só permite concluir se horário da tarefa chegou
   const now = new Date();
-  const taskDate = new Date(`${task.date}T${task.time}`);
+  const taskDate = new Date(`${tasks[idx].date}T${tasks[idx].time}`);
   if (now < taskDate) {
     showToast("A tarefa só pode ser concluída no horário marcado");
     return;
   }
 
-  task.completed = !task.completed;
+  tasks[idx].completed = !tasks[idx].completed;
   localStorage.setItem('tasks', JSON.stringify(tasks));
   renderTasks();
 }
+
 document.querySelectorAll('.category-btn').forEach(btn => {  
   btn.addEventListener('click', e => {  
     filterCategory = e.currentTarget.dataset.category;  
@@ -360,17 +355,18 @@ function scheduleTaskNotification(task) {
   const enabled = JSON.parse(localStorage.getItem('notificationsEnabled'));
   if (!enabled || Notification.permission !== "granted") return;
 
-  const taskTime = new Date(`${task.date}T${task.time}`).getTime();
-  const delay = taskTime - Date.now();
-  if (delay <= 0) return; // horário já passou
+  const time = new Date(`${task.date}T${task.time}`).getTime();
+  if (time <= Date.now()) return;
 
   navigator.serviceWorker.ready.then(reg => {
-    reg.active.postMessage({
+    reg.postMessage({
       type: 'SCHEDULE_NOTIFICATION',
-      title: `Tarefa: ${task.title}`,
-      body: task.desc || 'Hora da tarefa!',
-      delay,
-      taskId: task.id
+      task: {
+        id: task.id,
+        title: task.title,
+        body: task.desc || 'Hora da tarefa!',
+        time
+      }
     });
   });
 }
