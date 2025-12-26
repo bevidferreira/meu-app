@@ -322,26 +322,22 @@ function renderTasks() {
   });  
 }  
   
-function deleteTask(id) {
+  function deleteTask(id) {
   const idx = tasks.findIndex(t => t.id === id);
   if (idx === -1) return;
 
   if (!tasks[idx].seen) {
-    showToast("A tarefa só pode ser excluída após a notificação");
+    showToast("Só pode excluir após a notificação");
     return;
   }
 
-  if (!confirm("Deseja realmente excluir esta tarefa?")) return;
+  if (!confirm("Excluir esta tarefa?")) return;
 
-  navigator.serviceWorker.ready.then(reg => {
-  reg.getNotifications({ tag: `task-${id}` }).then(notifs => {
-    notifs.forEach(n => n.close());
-  });
-});
   tasks.splice(idx, 1);
   localStorage.setItem('tasks', JSON.stringify(tasks));
   renderTasks();
 }
+  
   function toggleTask(id) {
   const idx = tasks.findIndex(t => t.id === id);
   if (idx === -1) return;
@@ -368,7 +364,8 @@ document.querySelectorAll('.category-btn').forEach(btn => {
 });  
   
 // --- Notificações ---  
-function scheduleTaskNotification(task) {
+
+  function scheduleTaskNotification(task) {
   const enabled = JSON.parse(localStorage.getItem('notificationsEnabled'));
   if (!enabled || Notification.permission !== "granted") return;
 
@@ -376,18 +373,18 @@ function scheduleTaskNotification(task) {
   if (time <= Date.now()) return;
 
   navigator.serviceWorker.ready.then(reg => {
-    // tenta trigger nativo
-    if ('showTrigger' in Notification.prototype) {
-      reg.postMessage({
-        type: 'SCHEDULE_NOTIFICATION',
-        task: {
-          id: task.id,
-          title: `Tarefa: ${task.title}`,
-          body: task.desc || 'Hora da tarefa!',
-          time
-        }
-      });
-    } else {
+    reg.active.postMessage({
+      type: 'SCHEDULE_NOTIFICATION',
+      task: {
+        id: task.id,
+        title: `Tarefa: ${task.title}`,
+        body: task.desc || 'Hora da tarefa!',
+        time
+      }
+    });
+  });
+  }
+      else {
       // fallback: timeout enquanto app estiver aberto
       const delay = time - Date.now();
       setTimeout(() => {
